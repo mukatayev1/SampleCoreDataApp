@@ -18,14 +18,19 @@ class ViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Core Data practice"
-        navigationController?.navigationBar.prefersLargeTitles = true
+        setNavigationBar()
         setTableView()
         setRightBarButton()
+        
         fetchData()
     }
     
     // MARK: - Set
+    private func setNavigationBar() {
+        title = "Core Data practice"
+        navigationController?.navigationBar.prefersLargeTitles = true
+    }
+    
     private func setTableView() {
         view.addSubview(tableView)
         tableView.rowHeight = 100
@@ -44,12 +49,12 @@ class ViewController: UIViewController {
     
     // MARK: - View Logic
     private func didTapAdd(_ name: String) {
-        savePersonToDB(with: name)
+        savePersonToCoreData(with: name)
     }
     
     private func didSwipeToDelete(at index: Int) {
         guard let person = people[safe: index] else { return }
-        deletePersonFromDB(person)
+        deletePersonFromCoreData(person)
     }
     
     private func didSwipeToEdit(at index: Int) {
@@ -59,16 +64,19 @@ class ViewController: UIViewController {
         guard let textField = ac.textFields?[0],
               let person = people[safe: index],
               let name = person.name else { return }
-        
         textField.text = name
         
-        let submitAction = UIAlertAction(title: "Save ", style: .default) { [unowned ac] _ in
-            guard let text = textField.text, !text.isEmpty, text != name else { return }
+        //Save action
+        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+            guard let text = textField.text,
+                  !text.isEmpty,
+                  text != name else { return }
             person.name = text
-            self.updatePersonToDB(person: person)
+            self.updatePersonToCoreData(person: person)
         }
+        ac.addAction(saveAction)
         
-        ac.addAction(submitAction)
+        //Cancel action
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
         ac.addAction(cancelAction)
         
@@ -78,21 +86,24 @@ class ViewController: UIViewController {
     }
     
     private func showPersonDetails(at index: Int) {
-        guard let person = people[safe: index], let name = person.name else { return }
+        guard let person = people[safe: index],
+              let name = person.name else { return }
         presentBasicAlert(title: "Person Details", message: name)
     }
     
     // MARK: - CoreData logic
     private func fetchData() {
         people = coreDataManager.fetchPeople()
+        
         DispatchQueue.main.async {
             self.tableView.reloadSections([0], with: .fade)
         }
     }
     
-    private func savePersonToDB(with name: String) {
+    private func savePersonToCoreData(with name: String) {
         coreDataManager.saveNewPerson(name) { [weak self] error in
             guard let self = self else { return }
+            
             if let error = error {
                 fatalError(error.description)
             } else {
@@ -101,9 +112,10 @@ class ViewController: UIViewController {
         }
     }
     
-    private func deletePersonFromDB(_ person: Person) {
+    private func deletePersonFromCoreData(_ person: Person) {
         coreDataManager.deletePerson(person) { [weak self] error in
             guard let self = self else { return }
+            
             if let error = error {
                 fatalError(error.description)
             } else {
@@ -112,9 +124,10 @@ class ViewController: UIViewController {
         }
     }
     
-    private func updatePersonToDB(person: Person) {
+    private func updatePersonToCoreData(person: Person) {
         coreDataManager.updatePerson(person: person) { [weak self] error in
             guard let self = self else { return }
+            
             if let error = error {
                 fatalError(error.description)
             } else {
@@ -130,7 +143,9 @@ class ViewController: UIViewController {
         ac.addTextField()
         
         let submitAction = UIAlertAction(title: "Add", style: .default) { [unowned ac] _ in
-            guard let textField = ac.textFields?[0], let text = textField.text, !text.isEmpty else { return }
+            guard let textField = ac.textFields?[0],
+                  let text = textField.text,
+                  !text.isEmpty else { return }
             self.didTapAdd(text)
         }
         
@@ -146,6 +161,7 @@ class ViewController: UIViewController {
 // MARK: - TableViewDelegate
 extension ViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
         tableView.deselectRow(at: indexPath, animated: true)
         showPersonDetails(at: indexPath.row)
     }
@@ -155,6 +171,7 @@ extension ViewController: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        
         let delete = UIContextualAction(style: .destructive, title: "Delete") { (action, sourceView, completionHandler) in
             self.didSwipeToDelete(at: indexPath.row)
             completionHandler(true)
@@ -164,11 +181,12 @@ extension ViewController: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let delete = UIContextualAction(style: .normal, title: "Edit") { (action, sourceView, completionHandler) in
+        
+        let edit = UIContextualAction(style: .normal, title: "Edit") { (action, sourceView, completionHandler) in
             self.didSwipeToEdit(at: indexPath.row)
             completionHandler(true)
         }
-        let swipeActionConfig = UISwipeActionsConfiguration(actions: [delete])
+        let swipeActionConfig = UISwipeActionsConfiguration(actions: [edit])
         return swipeActionConfig
     }
 }
@@ -177,9 +195,11 @@ extension ViewController: UITableViewDelegate {
 extension ViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: MyCell.identifier, for: indexPath) as! MyCell
+        
         if let person = people[safe: indexPath.row], let name = person.name {
             cell.configure(text: name)
         }
+        
         return cell
     }
     
