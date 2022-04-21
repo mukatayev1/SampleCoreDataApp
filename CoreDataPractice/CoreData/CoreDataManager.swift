@@ -37,7 +37,7 @@ class CoreDataManager {
         person.age = 10
         person.gender = "male"
         //Save data
-        saveToContext(person: person, context: context) { saveError in
+        saveContext(context: context) { saveError in
             completion?(saveError)
         }
     }
@@ -45,7 +45,7 @@ class CoreDataManager {
     func deletePerson(_ person: Person, completion: ((DeleteError?) -> Void)?) {
         guard let context = context else { return }
         //Delete data
-        deleteFromContext(person: person, context: context) { deletionError in
+        deleteAndSaveContext(person: person, context: context) { deletionError in
             completion?(deletionError)
         }
     }
@@ -53,13 +53,13 @@ class CoreDataManager {
     func updatePerson(person: Person, completion: ((SaveError?) -> Void)?) {
         guard let context = context else { return }
         //Save data
-        saveToContext(person: person, context: context) { saveError in
+        saveContext(context: context) { saveError in
             completion?(saveError)
         }
     }
     
     // MARK: - Private
-    private func saveToContext(person: Person, context: NSManagedObjectContext, completion: ((SaveError?) -> Void)? = nil) {
+    private func saveContext(context: NSManagedObjectContext, completion: ((SaveError?) -> Void)? = nil) {
         do {
             try context.save()
             completion?(nil)
@@ -70,7 +70,7 @@ class CoreDataManager {
         }
     }
     
-    private func deleteFromContext(person: Person, context: NSManagedObjectContext, completion: ((DeleteError?) -> Void)? = nil) {
+    private func deleteAndSaveContext(person: Person, context: NSManagedObjectContext, completion: ((DeleteError?) -> Void)? = nil) {
         do {
             context.delete(person)
             try context.save()
