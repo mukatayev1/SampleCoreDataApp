@@ -90,6 +90,6 @@ extension CoreDataManager {
     }
     
     struct DeleteError: Error {
-        let description: String = "Error happened while saving to context"
+        let description: String = "Error happened while deleting to context"
     }
 }
